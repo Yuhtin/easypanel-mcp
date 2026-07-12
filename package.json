@@ -1,0 +1,39 @@
+{
+  "name": "easypanel-mcp",
+  "version": "0.1.0",
+  "description": "A security-first MCP server for bounded Easypanel operations",
+  "type": "module",
+  "packageManager": "npm@10.9.8",
+  "bin": {
+    "easypanel-mcp": "dist/index.js",
+    "easypanel-mcp-approve": "dist/cli/approve.js"
+  },
+  "files": [
+    "dist",
+    "docs",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "build:test": "tsc -p tsconfig.test.json",
+    "start": "node dist/index.js",
+    "test": "node scripts/run-tests.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check": "npm run typecheck && npm test && npm run build"
+  },
+  "engines": {
+    "node": "22.23.1",
+    "npm": "10.9.8"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.30",
+    "typescript": "5.8.3"
+  },
+  "overrides": {
+    "hono": "4.12.29"
+  }
+}
