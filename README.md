@@ -29,14 +29,10 @@ In Easypanel: **New Service → App Service → Docker Image**.
 Paste this image:
 
 ```text
-ghcr.io/yuhtin/easypanel-mcp:0.1.0
+ghcr.io/yuhtin/easypanel-mcp:latest
 ```
 
-For production, pin the immutable digest instead:
-
-```text
-ghcr.io/yuhtin/easypanel-mcp@sha256:c3efdef905b0506c86520d25e7d8b7b21ec1ba3eec8d6e82ecb67dc1e740528f
-```
+`latest` is updated automatically whenever a new release is published.
 
 Set:
 

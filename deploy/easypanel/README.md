@@ -11,19 +11,13 @@ approval model is local-file based.
 ## 1. Create the service
 
 Create an **App Service** with the **Docker Image** source. Use the image from the
-release workflow, for example:
+release workflow:
 
 ```text
-ghcr.io/yuhtin/easypanel-mcp:0.1.0
+ghcr.io/yuhtin/easypanel-mcp:latest
 ```
 
-For this release, the digest is:
-
-```text
-ghcr.io/yuhtin/easypanel-mcp@sha256:c3efdef905b0506c86520d25e7d8b7b21ec1ba3eec8d6e82ecb67dc1e740528f
-```
-
-Pin the digest shown in the GitHub Actions summary for later releases. Using the Git
+The `latest` tag is refreshed automatically on every GitHub release. Using the Git
 repository and `Dockerfile` is still supported for development, but it makes each
 Easypanel deploy rebuild the image.
 
