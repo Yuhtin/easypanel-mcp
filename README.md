@@ -99,6 +99,9 @@ the versioned image (or, preferably, its digest):
 ghcr.io/yuhtin/easypanel-mcp:0.1.0
 ```
 
+The first release currently resolves to
+`ghcr.io/yuhtin/easypanel-mcp@sha256:c3efdef905b0506c86520d25e7d8b7b21ec1ba3eec8d6e82ecb67dc1e740528f`.
+
 Do not use `latest`; release tags are never overwritten. The Git/Dockerfile
 source remains available for development. The short deployment flow is:
 

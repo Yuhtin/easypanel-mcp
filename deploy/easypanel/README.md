@@ -17,7 +17,13 @@ release workflow, for example:
 ghcr.io/yuhtin/easypanel-mcp:0.1.0
 ```
 
-Pin the digest shown in the GitHub Actions summary for production. Using the Git
+For this release, the digest is:
+
+```text
+ghcr.io/yuhtin/easypanel-mcp@sha256:c3efdef905b0506c86520d25e7d8b7b21ec1ba3eec8d6e82ecb67dc1e740528f
+```
+
+Pin the digest shown in the GitHub Actions summary for later releases. Using the Git
 repository and `Dockerfile` is still supported for development, but it makes each
 Easypanel deploy rebuild the image.
 
