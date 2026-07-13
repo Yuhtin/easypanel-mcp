@@ -10,8 +10,16 @@ approval model is local-file based.
 
 ## 1. Create the service
 
-Create an **App Service** from an immutable release tag such as `v0.1.0`. The
-repository `Dockerfile` is detected automatically.
+Create an **App Service** with the **Docker Image** source. Use the image from the
+release workflow, for example:
+
+```text
+ghcr.io/yuhtin/easypanel-mcp:0.1.0
+```
+
+Pin the digest shown in the GitHub Actions summary for production. Using the Git
+repository and `Dockerfile` is still supported for development, but it makes each
+Easypanel deploy rebuild the image.
 
 - Configure a domain such as `mcp.example.com`, proxying to internal port `3000`,
   with HTTPS enabled.

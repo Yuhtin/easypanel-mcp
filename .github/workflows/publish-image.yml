@@ -1,0 +1,44 @@
+name: Publish container image
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        env:
+          CR_PAT: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$CR_PAT" | docker login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
+
+      - name: Build and publish immutable release tags
+        env:
+          IMAGE: ghcr.io/yuhtin/easypanel-mcp
+        run: |
+          set -eu
+          version="${GITHUB_REF_NAME#v}"
+          test -n "$version"
+          docker build --pull \
+            --tag "$IMAGE:$version" \
+            --tag "$IMAGE:sha-$GITHUB_SHA" \
+            .
+          docker push "$IMAGE:$version"
+          docker push "$IMAGE:sha-$GITHUB_SHA"
+          digest="$(docker buildx imagetools inspect "$IMAGE:$version" --format '{{.Manifest.Digest}}')"
+          test -n "$digest"
+          {
+            echo "### Published image"
+            echo
+            echo "- Version: $IMAGE:$version"
+            echo "- Commit tag: $IMAGE:sha-$GITHUB_SHA"
+            echo "- Digest: $IMAGE@$digest"
+          } >> "$GITHUB_STEP_SUMMARY"

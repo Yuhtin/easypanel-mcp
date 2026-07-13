@@ -91,10 +91,19 @@ configuration surface.
 ## Recommended deployment: remote Easypanel service
 
 The complete step-by-step template is in
-[`deploy/easypanel/README.md`](deploy/easypanel/README.md). The short version is:
+[`deploy/easypanel/README.md`](deploy/easypanel/README.md). A release image is
+published to GHCR by GitHub Actions. In Easypanel, choose **Docker Image** and use
+the versioned image (or, preferably, its digest):
 
-1. Create an Easypanel **App Service** from an immutable release tag.
-2. Let it build this `Dockerfile`; use internal port `3000`.
+```text
+ghcr.io/yuhtin/easypanel-mcp:0.1.0
+```
+
+Do not use `latest`; release tags are never overwritten. The Git/Dockerfile
+source remains available for development. The short deployment flow is:
+
+1. Create an Easypanel **App Service** from the published Docker image.
+2. Use internal port `3000`.
 3. Attach one HTTPS domain and do not publish a host port.
 4. Run exactly one replica and mount a persistent volume at `/app/.state`.
 5. Store the following values as Easypanel secrets/environment variables:
@@ -183,8 +192,9 @@ To build the deployment image locally:
 docker build --tag easypanel-mcp:local .
 ```
 
-Release images should be built from an immutable Git tag and recorded by digest.
-Use one replica and automatic restart in the hosting service.
+Release images are built from immutable Git tags and the workflow prints the
+published digest in the Actions summary. Use one replica and automatic restart in
+the hosting service.
 
 ## Scope and limitations
 
