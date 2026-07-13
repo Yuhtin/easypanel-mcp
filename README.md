@@ -144,7 +144,7 @@ and [security policy](SECURITY.md) for details.
 - [Tool contract](docs/tool-contract.md)
 - [Validation notes](docs/validation.md)
 - [Contributing](CONTRIBUTING.md)
-- [Release `v0.1.0`](https://github.com/Yuhtin/easypanel-mcp/releases/tag/v0.1.0)
+- [Release `v0.1.1`](https://github.com/Yuhtin/easypanel-mcp/releases/tag/v0.1.1)
 
 ## License
 
