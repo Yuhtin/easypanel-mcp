@@ -1581,12 +1581,19 @@ function optionalIsoDateField(
 ): string | undefined {
   if (!Object.hasOwn(value, key) || value[key] === null) return undefined;
   const raw = requireStringField(value, key, 64);
+  // Easypanel 2.30 returns deployment timestamps as a UTC SQL-style value
+  // (`YYYY-MM-DD HH:mm:ss`) instead of an RFC 3339 timestamp. Accept only
+  // that exact legacy shape and normalize it to the public ISO projection;
+  // arbitrary date strings remain invalid.
+  const normalizedRaw = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(raw)
+    ? `${raw.replace(" ", "T")}Z`
+    : raw;
   if (
-    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(raw)
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(normalizedRaw)
   ) {
     invalidUpstream();
   }
-  const timestamp = Date.parse(raw);
+  const timestamp = Date.parse(normalizedRaw);
   if (!Number.isFinite(timestamp)) invalidUpstream();
   return new Date(timestamp).toISOString();
 }

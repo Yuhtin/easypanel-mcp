@@ -517,6 +517,38 @@ test("legacy configuration mutations accept Easypanel's undefined acknowledgemen
   );
 });
 
+test("legacy deployment timestamps are normalized without widening date parsing", async () => {
+  const fetch: typeof globalThis.fetch = async (input) => {
+    const path = new URL(String(input)).pathname;
+    if (path === "/api/openapi.json") {
+      return new Response(JSON.stringify({ paths: procedurePaths() }));
+    }
+    if (path === "/api/rpc/update/getStatus") {
+      return new Response(JSON.stringify({ json: { version: "2.31.0" } }));
+    }
+    if (path === "/api/rpc/actions/listActions") {
+      return new Response(JSON.stringify({
+        json: [{
+          id: "deployment-action-1",
+          type: "deployment",
+          projectName: "sandbox",
+          serviceName: "api",
+          status: "done",
+          createdAt: "2026-07-13 05:29:20",
+        }],
+      }));
+    }
+    throw new Error("unexpected fake request");
+  };
+  assert.deepEqual(await gateway(fetch).listDeployments("sandbox", "api"), [{
+    id: "deployment-action-1",
+    project: "sandbox",
+    service: "api",
+    status: "running",
+    createdAt: "2026-07-13T05:29:20.000Z",
+  }]);
+});
+
 test("database creation requires a target-bound credential acknowledgement", async () => {
   const fetch = rpcMutationFetch("/api/rpc/services/postgres/createService", {
     success: true,
