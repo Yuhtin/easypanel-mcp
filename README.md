@@ -1,141 +1,82 @@
+<div align="center">
+
 # easypanel-mcp
 
-Security-first [Model Context Protocol](https://modelcontextprotocol.io/) server
-for bounded Easypanel observation and operations.
+**Connect your AI agent to Easypanel. Read-only by default.**
 
-This project has two deliberately different deployment modes:
+<p>
+  <a href="https://github.com/Yuhtin/easypanel-mcp/actions/workflows/ci.yml"><img src="https://github.com/Yuhtin/easypanel-mcp/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/Yuhtin/easypanel-mcp/pkgs/container/easypanel-mcp"><img src="https://img.shields.io/badge/GHCR-public-blue?logo=docker" alt="GHCR image"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-green.svg" alt="Apache 2.0 license"></a>
+</p>
 
-- **Local stdio** exposes the complete MCP tool set, including planning and
-  guarded mutations. It is intended for a trusted MCP host on the same machine
-  as the configuration and approval files.
-- **Remote Streamable HTTP** runs as an Easypanel App Service and exposes only
-  seven read-only observation tools. Plans and mutations are not reachable over
-  the public listener.
+<img src="docs/assets/easypanel-mcp.svg" alt="MCP client connected over HTTPS to a read-only Easypanel MCP service" width="900">
 
-The remote mode is the recommended first deployment. It does not require Node.js
-on the client machine.
+</div>
 
-> Preview status: the automated security, protocol, gateway, and offline fixture
-> suites pass. The repository has not been connected to a production Easypanel
-> instance. Validate against a disposable instance before relying on it for
-> operational work.
+Give Claude, ChatGPT, Cursor, or any MCP client a safe view of your Easypanel
+projects, services, health, deployments, and sanitized logs.
 
-## Security properties
+## Start here (recommended)
 
-- No shell, container exec, Docker socket, raw RPC, arbitrary URL probing, or
-  generic host administration.
-- Explicit HTTPS origin, exact Host validation, independent bearer token, strict
-  request/response limits, redirect rejection, and bounded upstream timeouts.
-- Project allowlists are mandatory; wildcard access is rejected.
-- Service inspection is a positive projection. Environment names may be shown,
-  but values and credentials are never returned.
-- Deployment log content is disabled in the first release.
-- Remote HTTP is always `readonly`, uses one process-local session store, and
-  fails closed if a request cannot be cancelled and settled.
-- Local mutations require a fresh plan, external human approval, preconditions,
-  post-action verification, and an audit record.
+Run it as one Easypanel App Service. There is no Node.js installation on your
+computer and no repository build step.
 
-## Requirements
+### 1. Create the service
 
-- Node.js `22.23.1` and npm `10.9.8` for local development.
-- An Easypanel API token with the smallest practical scope.
-- An explicit Easypanel version pin in `EASYPANEL_EXPECTED_VERSION`.
+In Easypanel: **New Service → App Service → Docker Image**.
 
-## Quick start: local stdio
-
-```bash
-git clone https://github.com/Yuhtin/easypanel-mcp.git
-cd easypanel-mcp
-npm ci
-npm run build
-```
-
-Create a private environment for the MCP host. Do not commit it.
-
-```bash
-export EASYPANEL_URL="https://panel.example.com"
-export EASYPANEL_TOKEN="<panel-token>"
-export EASYPANEL_ACCESS_MODE="readonly"
-export EASYPANEL_ALLOWED_PROJECTS="my-project"
-export EASYPANEL_EXPECTED_VERSION="2.31.0"
-export EASYPANEL_MCP_TRANSPORT="stdio"
-node dist/index.js
-```
-
-An MCP client configuration is typically:
-
-```json
-{
-  "mcpServers": {
-    "easypanel": {
-      "command": "node",
-      "args": ["/absolute/path/to/easypanel-mcp/dist/index.js"],
-      "env": {
-        "EASYPANEL_URL": "https://panel.example.com",
-        "EASYPANEL_TOKEN": "<panel-token>",
-        "EASYPANEL_ACCESS_MODE": "readonly",
-        "EASYPANEL_ALLOWED_PROJECTS": "my-project",
-        "EASYPANEL_EXPECTED_VERSION": "2.31.0",
-        "EASYPANEL_MCP_TRANSPORT": "stdio"
-      }
-    }
-  }
-}
-```
-
-The local server registers 14 tools. Read-only queries and plans are available
-in `readonly`; every mutation remains blocked until the access mode, approval
-artifacts, and policy allow it. See [`.env.example`](.env.example) for the full
-configuration surface.
-
-## Recommended deployment: remote Easypanel service
-
-The complete step-by-step template is in
-[`deploy/easypanel/README.md`](deploy/easypanel/README.md). A release image is
-published to GHCR by GitHub Actions. In Easypanel, choose **Docker Image** and use
-the versioned image (or, preferably, its digest):
+Paste this image:
 
 ```text
 ghcr.io/yuhtin/easypanel-mcp:0.1.0
 ```
 
-The first release currently resolves to
-`ghcr.io/yuhtin/easypanel-mcp@sha256:c3efdef905b0506c86520d25e7d8b7b21ec1ba3eec8d6e82ecb67dc1e740528f`.
+For production, pin the immutable digest instead:
 
-Do not use `latest`; release tags are never overwritten. The Git/Dockerfile
-source remains available for development. The short deployment flow is:
+```text
+ghcr.io/yuhtin/easypanel-mcp@sha256:c3efdef905b0506c86520d25e7d8b7b21ec1ba3eec8d6e82ecb67dc1e740528f
+```
 
-1. Create an Easypanel **App Service** from the published Docker image.
-2. Use internal port `3000`.
-3. Attach one HTTPS domain and do not publish a host port.
-4. Run exactly one replica and mount a persistent volume at `/app/.state`.
-5. Store the following values as Easypanel secrets/environment variables:
+Set:
+
+- internal port: `3000`
+- one replica
+- HTTPS domain, for example `https://mcp.example.com`
+- persistent volume: `/app/.state`
+- automatic restart enabled
+- no public host port
+
+### 2. Add the environment variables
+
+Create a separate MCP access token with:
+
+```bash
+openssl rand -hex 32
+```
+
+Add these variables in Easypanel. Replace the values in angle brackets:
 
 ```dotenv
 EASYPANEL_MCP_TRANSPORT=http
 EASYPANEL_MCP_HTTP_BIND_HOST=0.0.0.0
 EASYPANEL_MCP_HTTP_PUBLIC_ORIGIN=https://mcp.example.com
-EASYPANEL_MCP_ACCESS_TOKEN=<random-independent-bearer>
+EASYPANEL_MCP_ACCESS_TOKEN=<token-generated-above>
 
 EASYPANEL_URL=https://panel.example.com
-EASYPANEL_TOKEN=<panel-token>
+EASYPANEL_TOKEN=<easypanel-api-token>
 EASYPANEL_ACCESS_MODE=readonly
 EASYPANEL_ALLOWED_PROJECTS=my-project
 EASYPANEL_EXPECTED_VERSION=2.31.0
-EASYPANEL_INSTANCE_LABEL=easypanel
-EASYPANEL_TIMEOUT_MS=10000
-
-EASYPANEL_AUDIT_PATH=/app/.state/audit.jsonl
-EASYPANEL_APPROVAL_DIR=/app/.state/approvals
-EASYPANEL_RUNTIME_LOCK_PATH=/app/.state/runtime.lock
 ```
 
-The public token is separate from `EASYPANEL_TOKEN`. Generate it with a password
-manager, keep it out of Git, and rotate it by updating the service environment.
-The proxy must preserve the exact `Host` header and allow at least 75 seconds for
-an MCP response. The request body limit is 128 KiB.
+`EASYPANEL_MCP_ACCESS_TOKEN` and `EASYPANEL_TOKEN` are different secrets.
+Keep both in Easypanel's secret fields. The project allowlist must name the
+projects this MCP may see; `*` is not accepted.
 
-Connect a remote-capable MCP client with:
+### 3. Connect your agent
+
+Copy this into the MCP configuration of your client:
 
 ```json
 {
@@ -150,69 +91,64 @@ Connect a remote-capable MCP client with:
 }
 ```
 
-The remote registry is intentionally exactly these seven tools:
-
-| Tool | Purpose |
-| --- | --- |
-| `easypanel_list_projects` | List projects in the configured allowlist |
-| `easypanel_list_services` | List sanitized services in one project |
-| `easypanel_inspect_service` | Inspect a bounded public service projection |
-| `easypanel_check_service_health` | Return status and readiness projections |
-| `easypanel_list_deployments` | List bounded deployment summaries |
-| `easypanel_get_deployment_status` | Read one target-bound deployment status |
-| `easypanel_get_sanitized_logs` | Return the fixed “logs disabled” policy message |
-
-`easypanel_capabilities`, planning, lifecycle, deploy, apply, rotation, and
-destroy tools are deliberately unavailable over HTTP. The service starts only
-after its Easypanel capability discovery succeeds, so the remote query budget is
-bounded by the configured upstream timeout.
-
-Check the service without credentials:
+### 4. Check it
 
 ```bash
 curl -i https://mcp.example.com/healthz
 ```
 
-It should return `204`. `GET /mcp` should return `405`; there is no SSE endpoint,
-CORS policy, browser login, URL token, or administrative route.
+`204` means the service is alive. Your agent should see exactly seven remote
+tools: projects, services, service inspection, health, deployments, deployment
+status, and sanitized logs.
 
-## Development and verification
+## What it can do
 
-```bash
-npm ci
-npm run typecheck
-npm test
-npm run build
-```
+Remote mode is deliberately read-only. It cannot deploy, apply, rotate secrets,
+destroy services, execute shell commands, access the Docker socket, or act as a
+general host administration API.
 
-The tests use only the bundled fake fixture and mocked HTTP responses. They do not
-contact a real Easypanel. The test runner canonicalizes the temporary directory
-on macOS so the secure-path checks retain their no-symlink invariant.
+Local stdio mode also supports planning and guarded operations when you
+explicitly need them on a trusted machine. The approval flow, audit log, and
+full environment reference are documented in [`.env.example`](.env.example).
 
-To build the deployment image locally:
+## Local development
 
 ```bash
-docker build --tag easypanel-mcp:local .
+git clone https://github.com/Yuhtin/easypanel-mcp.git && cd easypanel-mcp && npm ci && npm run build
 ```
 
-Release images are built from immutable Git tags and the workflow prints the
-published digest in the Actions summary. Use one replica and automatic restart in
-the hosting service.
+Set `EASYPANEL_MCP_TRANSPORT=stdio` and the required Easypanel variables, then
+run:
 
-## Scope and limitations
+```bash
+npm start
+```
 
-This server is not a general Easypanel console. It intentionally does not manage
-hosts, Docker, mounts, certificates, backups, arbitrary service kinds, or runtime
-WebSocket logs. Remote access currently represents one trusted bearer identity;
-it is not a multi-user authorization system. Do not expose it without HTTPS and
-an explicit project allowlist.
+Run the checks before opening a pull request:
 
-## Contributing and security
+```bash
+npm run check
+```
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a change and
-[SECURITY.md](SECURITY.md) before reporting a vulnerability. Never include panel
-tokens, approval keys, environment values, or private deployment URLs in issues
-or pull requests.
+## Security defaults
+
+- Remote HTTP is always `readonly`.
+- HTTPS, exact host validation, and a separate bearer token are required.
+- Project access is an explicit allowlist.
+- Responses redact environment values and credentials.
+- Upstream calls, request sizes, sessions, and concurrency are bounded.
+
+This is a preview release. Test it against a disposable Easypanel instance
+before using it for production operations. See the [security model](docs/security-model.md)
+and [security policy](SECURITY.md) for details.
+
+## Links
+
+- [Easypanel deployment details](deploy/easypanel/README.md)
+- [Tool contract](docs/tool-contract.md)
+- [Validation notes](docs/validation.md)
+- [Contributing](CONTRIBUTING.md)
+- [Release `v0.1.0`](https://github.com/Yuhtin/easypanel-mcp/releases/tag/v0.1.0)
 
 ## License
 
