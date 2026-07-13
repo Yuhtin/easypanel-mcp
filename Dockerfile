@@ -13,7 +13,10 @@ RUN npm run build && npm prune --omit=dev --ignore-scripts
 
 FROM node:22.23.1-bookworm-slim AS runtime
 
-ENV NODE_ENV=production
+ENV NODE_ENV=production \
+    EASYPANEL_MCP_TRANSPORT=http \
+    EASYPANEL_MCP_HTTP_BIND_HOST=0.0.0.0 \
+    EASYPANEL_ACCESS_MODE=readonly
 WORKDIR /app
 
 LABEL org.opencontainers.image.source="https://github.com/Yuhtin/easypanel-mcp" \

@@ -45,30 +45,39 @@ Set:
 
 ### 2. Add the environment variables
 
-Create a separate MCP access token with:
-
-```bash
-openssl rand -hex 32
-```
+Generate a random value (at least 32 characters recommended) in your password
+manager and use it as the MCP access token. Do not use your Easypanel API token
+for this value.
 
 Add these variables in Easypanel. Replace the values in angle brackets:
 
 ```dotenv
-EASYPANEL_MCP_TRANSPORT=http
-EASYPANEL_MCP_HTTP_BIND_HOST=0.0.0.0
 EASYPANEL_MCP_HTTP_PUBLIC_ORIGIN=https://mcp.example.com
-EASYPANEL_MCP_ACCESS_TOKEN=<token-generated-above>
+EASYPANEL_MCP_ACCESS_TOKEN=<random-token>
 
 EASYPANEL_URL=https://panel.example.com
 EASYPANEL_TOKEN=<easypanel-api-token>
-EASYPANEL_ACCESS_MODE=readonly
 EASYPANEL_ALLOWED_PROJECTS=my-project
 EASYPANEL_EXPECTED_VERSION=2.31.0
 ```
 
-`EASYPANEL_MCP_ACCESS_TOKEN` and `EASYPANEL_TOKEN` are different secrets.
-Keep both in Easypanel's secret fields. The project allowlist must name the
-projects this MCP may see; `*` is not accepted.
+The image already sets `EASYPANEL_MCP_TRANSPORT=http`, binds to `0.0.0.0`, and
+uses `readonly` mode. Keep the two tokens in Easypanel's secret fields. The
+project allowlist must name the projects this MCP may see; `*` is not accepted.
+
+### Where each value comes from
+
+| Variable | What to enter | Where to get it |
+| --- | --- | --- |
+| `EASYPANEL_MCP_HTTP_PUBLIC_ORIGIN` | `https://mcp.example.com` | Add a domain to this MCP service in Easypanel and copy the full HTTPS URL. |
+| `EASYPANEL_MCP_ACCESS_TOKEN` | A random value, 32+ characters | Generate it in a password manager. Use the same value in your MCP client configuration. |
+| `EASYPANEL_URL` | `https://panel.example.com` | The URL you use to open your Easypanel panel, without a path. |
+| `EASYPANEL_TOKEN` | Your Easypanel API token | Easypanel **Settings → API → Generate Token**. Use the smallest scope available. |
+| `EASYPANEL_ALLOWED_PROJECTS` | `my-project` | Copy the exact project name from the Easypanel sidebar. Separate multiple projects with commas. |
+| `EASYPANEL_EXPECTED_VERSION` | For example, `2.31.0` | Copy the exact Easypanel version shown in the panel's version or update screen. |
+
+The two tokens are different: `EASYPANEL_TOKEN` authenticates to Easypanel;
+`EASYPANEL_MCP_ACCESS_TOKEN` authenticates MCP clients to this service.
 
 ### 3. Connect your agent
 

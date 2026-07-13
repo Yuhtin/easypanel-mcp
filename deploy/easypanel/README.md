@@ -36,29 +36,34 @@ Put secrets in Easypanel's secret environment fields, never in Git or the MCP
 client configuration.
 
 ```dotenv
-EASYPANEL_MCP_TRANSPORT=http
-EASYPANEL_MCP_HTTP_BIND_HOST=0.0.0.0
 EASYPANEL_MCP_HTTP_PUBLIC_ORIGIN=https://mcp.example.com
-EASYPANEL_MCP_ACCESS_TOKEN=<random-independent-bearer-at-least-32-chars>
+EASYPANEL_MCP_ACCESS_TOKEN=<random-token-at-least-32-characters>
 
 EASYPANEL_URL=https://panel.example.com
 EASYPANEL_TOKEN=<least-privileged-panel-token>
-EASYPANEL_ACCESS_MODE=readonly
 EASYPANEL_ALLOWED_PROJECTS=my-project
 EASYPANEL_EXPECTED_VERSION=<exact-panel-version>
-EASYPANEL_INSTANCE_LABEL=easypanel
-EASYPANEL_TIMEOUT_MS=10000
 
 EASYPANEL_AUDIT_PATH=/app/.state/audit.jsonl
 EASYPANEL_APPROVAL_DIR=/app/.state/approvals
 EASYPANEL_RUNTIME_LOCK_PATH=/app/.state/runtime.lock
 ```
 
-`EASYPANEL_MCP_ACCESS_TOKEN` is not the panel token. Generate it with a password
+The image supplies safe defaults for HTTP transport, the container bind host,
+and `readonly` access. `EASYPANEL_MCP_ACCESS_TOKEN` is not the panel token.
+Generate a random value (at least 32 characters recommended) in a password
 manager and rotate it through the service environment. Remote startup fails
 closed when the public origin is not HTTPS, the token is missing, the project
 allowlist contains `*`, the host does not match exactly, or access mode is not
 `readonly`.
+
+Get the remaining values as follows:
+
+- `EASYPANEL_MCP_HTTP_PUBLIC_ORIGIN`: the HTTPS domain configured for this MCP service.
+- `EASYPANEL_URL`: the URL used to open your Easypanel panel.
+- `EASYPANEL_TOKEN`: Easypanel **Settings → API → Generate Token**; use the smallest scope available.
+- `EASYPANEL_ALLOWED_PROJECTS`: the exact project name from the Easypanel sidebar.
+- `EASYPANEL_EXPECTED_VERSION`: the exact version shown in Easypanel's version or update screen.
 
 Configure a proxy response timeout of at least 75 seconds and a request body limit
 of at most 128 KiB. Preserve the exact `Host` header; do not rely on
