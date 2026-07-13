@@ -230,11 +230,45 @@ test("remote HTTP is authenticated, stateful, JSON-only, and exposes the fixed t
     ],
   );
 
-  const deniedCapabilities = await send(service.port, {
+  // Codex probes these discovery methods during startup even though this
+  // server exposes no resources. They must resolve with valid JSON-RPC
+  // responses rather than being rejected at the HTTP edge.
+  const resources = await send(service.port, {
     headers: rpcHeaders(sessionId as string),
     body: JSON.stringify({
       jsonrpc: "2.0",
       id: 6,
+      method: "resources/list",
+      params: {},
+    }),
+  });
+  assert.equal(resources.status, 200);
+  assert.deepEqual(
+    (JSON.parse(resources.body) as { result: { resources: unknown[] } }).result.resources,
+    [],
+  );
+
+  const resourceTemplates = await send(service.port, {
+    headers: rpcHeaders(sessionId as string),
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 7,
+      method: "resources/templates/list",
+      params: {},
+    }),
+  });
+  assert.equal(resourceTemplates.status, 200);
+  assert.deepEqual(
+    (JSON.parse(resourceTemplates.body) as { result: { resourceTemplates: unknown[] } }).result
+      .resourceTemplates,
+    [],
+  );
+
+  const deniedCapabilities = await send(service.port, {
+    headers: rpcHeaders(sessionId as string),
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 8,
       method: "tools/call",
       params: { name: "easypanel_capabilities", arguments: {} },
     }),
@@ -245,7 +279,7 @@ test("remote HTTP is authenticated, stateful, JSON-only, and exposes the fixed t
     headers: rpcHeaders(sessionId as string),
     body: JSON.stringify({
       jsonrpc: "2.0",
-      id: 7,
+      id: 9,
       method: "tools/call",
       params: { name: "easypanel_plan_service", arguments: {} },
     }),

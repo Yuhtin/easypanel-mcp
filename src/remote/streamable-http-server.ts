@@ -15,6 +15,8 @@ import {
   InitializedNotificationSchema,
   JSONRPCMessageSchema,
   JSONRPCResultResponseSchema,
+  ListResourceTemplatesRequestSchema,
+  ListResourcesRequestSchema,
   ListToolsRequestSchema,
   PingRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
@@ -33,6 +35,11 @@ const DEFAULT_ABORT_SETTLEMENT_GRACE_MS = 5_000;
 const SESSION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const ALLOWED_SESSION_METHODS = new Set([
   "notifications/initialized",
+  // Codex probes these discovery methods even when the server advertises no
+  // resources. Answer with valid empty results so its startup worker does not
+  // hang on an id-less transport error.
+  "resources/list",
+  "resources/templates/list",
   "tools/list",
   "tools/call",
   "ping",
@@ -54,6 +61,8 @@ const REMOTE_READONLY_TOOLS = new Set([
 type SessionMethod =
   | "initialize"
   | "notifications/initialized"
+  | "resources/list"
+  | "resources/templates/list"
   | "tools/list"
   | "tools/call"
   | "ping";
@@ -367,6 +376,22 @@ export class RemoteMcpHttpServer {
     }
     if (method === "tools/call" && !isRemoteReadonlyToolCall(body)) {
       writeError(response, 403, "REMOTE_TOOL_DENIED");
+      return;
+    }
+
+    // Codex asks for resource discovery during startup even though this
+    // server intentionally exposes no resources. The SDK transport returns a
+    // method-not-found HTTP error when no resource handler is registered;
+    // answer these bounded probes directly so the request id is preserved and
+    // the client can continue to tools/list.
+    if (method === "resources/list" || method === "resources/templates/list") {
+      const requestId = rpcRequestId(body);
+      if (requestId === undefined) {
+        writeError(response, 400, "REQUEST_REJECTED");
+        return;
+      }
+      emitEmptyResourceList(response, session.id, requestId, method);
+      session.lastSeenAt = Date.now();
       return;
     }
 
@@ -820,6 +845,8 @@ function allowedMcpMethod(
   if (typeof method !== "string" || !ALLOWED_SESSION_METHODS.has(method)) return undefined;
   const valid = [
     InitializedNotificationSchema,
+    ListResourcesRequestSchema,
+    ListResourceTemplatesRequestSchema,
     ListToolsRequestSchema,
     CallToolRequestSchema,
     PingRequestSchema,
@@ -1087,6 +1114,23 @@ function emitTransportResponse(
   );
   response.setHeader("content-length", Buffer.byteLength(materialized.body, "utf8"));
   response.end(materialized.body);
+}
+
+function emitEmptyResourceList(
+  response: ServerResponse,
+  sessionId: string,
+  requestId: RpcRequestId,
+  method: "resources/list" | "resources/templates/list",
+): void {
+  const result = method === "resources/list"
+    ? { resources: [] }
+    : { resourceTemplates: [] };
+  const body = JSON.stringify({ jsonrpc: "2.0", id: requestId, result });
+  response.statusCode = 200;
+  response.setHeader("mcp-session-id", sessionId);
+  response.setHeader("content-type", "application/json");
+  response.setHeader("content-length", Buffer.byteLength(body, "utf8"));
+  response.end(body);
 }
 
 async function readBoundedResponse(
