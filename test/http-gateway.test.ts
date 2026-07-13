@@ -504,6 +504,19 @@ test("HTTP mutations require explicit success and an exact returned target", asy
   ).createProject("sandbox", { auditId: "audit-test" });
 });
 
+test("legacy configuration mutations accept Easypanel's undefined acknowledgement", async () => {
+  const fetch = rpcMutationFetch(
+    "/api/rpc/services/app/updateEnv",
+    null,
+  );
+  await gateway(fetch).updateEnvironment(
+    "sandbox",
+    "api",
+    "MCP_MODE=readonly",
+    { auditId: "audit-test" },
+  );
+});
+
 test("database creation requires a target-bound credential acknowledgement", async () => {
   const fetch = rpcMutationFetch("/api/rpc/services/postgres/createService", {
     success: true,

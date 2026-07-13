@@ -61,6 +61,26 @@ const MAX_SECRET_BYTES_PER_RESPONSE = 262_144;
 const MAX_RESPONSE_CHUNKS = 4_096;
 const MAX_SENSITIVE_CONTAINER_ENTRIES = 10_000;
 
+// Legacy Easypanel configuration mutations commonly return the tRPC
+// `undefined` sentinel instead of a service/project ownership object. The
+// operator's follow-up plan verification remains the source of truth for
+// these state transitions. Mutations that create an action (deploy/lifecycle)
+// are intentionally excluded because their response carries the correlation
+// id required to prove which action ran.
+const EMPTY_SUCCESS_MUTATIONS: ReadonlySet<ProcedureKey> = new Set([
+  "source_image",
+  "source_git",
+  "update_env",
+  "update_resources",
+  "update_deploy",
+  "update_healthcheck",
+  "create_domain",
+  "delete_domain",
+  "destroy_app",
+  "destroy_postgres",
+  "destroy_redis",
+]);
+
 export interface HttpGatewayOptions {
   baseUrl: URL;
   token: string;
@@ -668,6 +688,15 @@ export class HttpEasypanelGateway implements EasypanelGateway {
     expectation: MutationExpectation,
   ): Promise<unknown> {
     const result = await this.#call(key, input);
+    // Easypanel 2.30's configuration mutations acknowledge success with
+    // `undefined` (tRPC's `null` payload) rather than an ownership envelope.
+    // The operator always performs a bounded desired-state read-back before
+    // completing a service plan, so accepting this response is safe here. Do
+    // not apply this compatibility path to deployment/lifecycle mutations:
+    // those require a fresh opaque action id for correlation and verification.
+    if (EMPTY_SUCCESS_MUTATIONS.has(key) && (result === undefined || result === null)) {
+      return result;
+    }
     assertMutationAcknowledgement(result, expectation);
     return result;
   }
